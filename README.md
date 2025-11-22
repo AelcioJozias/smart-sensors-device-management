@@ -1,0 +1,1 @@
+# smart-sensors-device-management
