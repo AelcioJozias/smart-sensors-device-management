@@ -1,4 +1,4 @@
-package com.jozias.smartsensors.device.management;
+package com.jozias.smartsensors.device.management.common;
 
 import io.hypersistence.tsid.TSID;
 

@@ -1,4 +1,4 @@
-package com.jozias.smartsensors.device.management;
+package com.jozias.smartsensors.device.management.common;
 
 import io.hypersistence.tsid.TSID;
 import org.assertj.core.api.Assertions;
@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-class TsIdTest {
+class IdGeneratorTest {
 
     @Test
     void shouldGenerateTSID() {
