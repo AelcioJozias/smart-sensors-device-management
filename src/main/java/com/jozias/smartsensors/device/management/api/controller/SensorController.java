@@ -6,9 +6,15 @@ import com.jozias.smartsensors.device.management.common.IdGenerator;
 import com.jozias.smartsensors.device.management.domain.model.Sensor;
 import com.jozias.smartsensors.device.management.domain.model.SensorId;
 import com.jozias.smartsensors.device.management.domain.repository.SensorRepository;
+import io.hypersistence.tsid.TSID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
 
 @RestController
 @RequestMapping("api/sensors")
@@ -16,6 +22,21 @@ import org.springframework.web.bind.annotation.*;
 public class SensorController {
 
     private final SensorRepository sensorRepository;
+
+    // Com esse pageable abaixo já funciona até a ordenação e paginação automática
+    @GetMapping
+    public Page<SensorOutput> search(@PageableDefault Pageable pageable) {
+        Page<Sensor> sensors = sensorRepository.findAll(pageable);
+        // Esse método abaixo converte cada Sensor para SensorOutput. Ele é muito bom
+        return sensors.map(this::convertToModel);
+    }
+
+    @GetMapping("{sensorId}")
+    public SensorOutput getOne(@PathVariable("sensorId") TSID sensorId) {
+        Sensor sensor = sensorRepository.findById(new SensorId(sensorId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return convertToModel(sensor);
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -29,11 +50,13 @@ public class SensorController {
                 .model(input.getModel())
                 .enabled(input.isEnabled())
                 .build();
-
         Sensor sensorPersisted = sensorRepository.saveAndFlush(sensor);
+        return convertToModel(sensorPersisted);
+    }
 
+    private SensorOutput convertToModel(Sensor sensor) {
         return SensorOutput.builder()
-                .id(sensorPersisted.getId().getValue())
+                .id(sensor.getId().getValue())
                 .name(sensor.getName())
                 .ip(sensor.getIp())
                 .location(sensor.getLocation())
