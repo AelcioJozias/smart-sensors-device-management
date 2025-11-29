@@ -7,7 +7,9 @@ import com.jozias.smartsensors.device.management.domain.model.Sensor;
 import com.jozias.smartsensors.device.management.domain.model.SensorId;
 import com.jozias.smartsensors.device.management.domain.repository.SensorRepository;
 import io.hypersistence.tsid.TSID;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -22,6 +24,24 @@ import org.springframework.web.server.ResponseStatusException;
 public class SensorController {
 
     private final SensorRepository sensorRepository;
+
+    @PutMapping("{sensorId}/enable")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void enableSensor(@PathVariable("sensorId") TSID sensorId) {
+        Sensor sensor = sensorRepository.findById(new SensorId(sensorId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        sensor.setEnabled(true);
+        sensorRepository.save(sensor);
+    }
+
+    @DeleteMapping("{sensorId}/enable")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void disableSensor(@PathVariable("sensorId") TSID sensorId) {
+        Sensor sensor = sensorRepository.findById(new SensorId(sensorId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        sensor.setEnabled(false);
+        sensorRepository.save(sensor);
+    }
 
     // Com esse pageable abaixo já funciona até a ordenação e paginação automática
     @GetMapping
@@ -48,10 +68,27 @@ public class SensorController {
                 .location(input.getLocation())
                 .protocol(input.getProtocol())
                 .model(input.getModel())
-                .enabled(input.isEnabled())
+                .enabled(false)
                 .build();
         Sensor sensorPersisted = sensorRepository.saveAndFlush(sensor);
         return convertToModel(sensorPersisted);
+    }
+
+    @DeleteMapping("{sensorId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable("sensorId") TSID sensorId) {
+        Sensor sensor = sensorRepository.findById(new SensorId(sensorId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        sensorRepository.delete(sensor);
+    }
+
+    @PutMapping("{sensorId}")
+    public SensorOutput update(@PathVariable("sensorId") TSID tsid, @RequestBody @Valid SensorInput input) {
+        Sensor sensor = sensorRepository.findById(new SensorId(tsid))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        BeanUtils.copyProperties(input, sensor);
+        Sensor sensorUpdated = sensorRepository.saveAndFlush(sensor);
+        return convertToModel(sensorUpdated);
     }
 
     private SensorOutput convertToModel(Sensor sensor) {
@@ -65,5 +102,4 @@ public class SensorController {
                 .enabled(sensor.isEnabled())
                 .build();
     }
-
 }
